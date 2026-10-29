@@ -43,9 +43,13 @@ async function stableHardware(page) {
 }
 const visible = async (page, id) => {
   await page.locator("#" + id).waitFor({ state: "visible" });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await stableHardware(page);
+  const overflow = await page.locator(".page:not([hidden])").evaluate((el) => el.scrollHeight - el.clientHeight);
+  assert(overflow <= 2, `${id} requires scrolling: ${overflow}px`);
 };
 async function fits(page) {
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const bounds = await page.evaluate(() => ({
     width: innerWidth,
     height: innerHeight,
@@ -57,6 +61,26 @@ async function fits(page) {
       .toJSON(),
     pad: document.querySelector("#pad").getBoundingClientRect().toJSON(),
   }));
+  const controls = await page.evaluate(() => {
+    const rect = (id) => document.getElementById(id).getBoundingClientRect();
+    const fire = rect("fire"), direction = rect("direction-controls");
+    const actions = document.querySelector(".hardware-actions").getBoundingClientRect();
+    const shell = document.querySelector(".console").getBoundingClientRect();
+    if (innerHeight > innerWidth && !(actions.left >= direction.right && actions.right <= fire.left))
+      throw Error("Portrait auxiliary keys must be between movement and fire controls");
+    if (actions.left < shell.left || actions.right > shell.right || actions.top < shell.top || actions.bottom > shell.bottom)
+      throw Error("Auxiliary keys extend outside the shell");
+    return { offset: Math.abs(fire.top + fire.height / 2 - direction.top - direction.height / 2),
+      buttons: ["fullscreen", "battle-menu"].map((id) => {
+        const r = rect(id);
+        return { width: r.width, height: r.height, radius: getComputedStyle(document.getElementById(id)).borderRadius };
+      }) };
+  });
+  assert(controls.offset < 1, JSON.stringify(controls));
+  for (const button of controls.buttons) {
+    assert(Math.abs(button.width - button.height) < 1, JSON.stringify(button));
+    assert.equal(button.radius, "50%");
+  }
   assert(bounds.scroll <= bounds.width, JSON.stringify(bounds));
   assert(bounds.arena.width > 120);
   assert(bounds.arena.top >= 0);
@@ -157,6 +181,23 @@ try {
     document.querySelector("#connection").textContent.includes("мс"),
   );
   await stableHardware(a);
+  assert.equal(await a.locator("#battle-menu").isDisabled(), true);
+  assert.equal(await a.locator("#resume").isHidden(), true);
+  // A stale return action must not open a battle without a room or snapshot.
+  await a.locator("#back-to-battle").evaluate((button) => button.click());
+  await visible(a, "menu");
+  await a.route("**/game/battle/api/profile", async (route) => {
+    const response = await route.fetch();
+    const data = await response.json();
+    data.room = { code: "00000000", started: true, mode: "solo", host: true, slot: 0,
+      slots: [{ slot: 0, name: "Игрок", bot: false, ready: true }] };
+    await route.fulfill({ response, json: data });
+  });
+  await a.reload();
+  await a.waitForFunction(() => document.querySelector("#connection").textContent.includes("мс"));
+  await visible(a, "menu");
+  assert.equal(await a.locator("#resume").isHidden(), true);
+  await a.unroute("**/game/battle/api/profile");
   await a.screenshot({ path: "output/playwright/menu.png", fullPage: true });
   await a.getByRole("button", { name: "Настройки", exact: true }).click();
   await visible(a, "settings");
@@ -212,6 +253,10 @@ try {
   await stableHardware(a);
   await a.getByRole("button", { name: "Создать комнату", exact: true }).click();
   await a.locator("#coop").click();
+  await visible(a, "lobby");
+  assert.equal(await a.locator("#battle-menu").isDisabled(), true);
+  assert.equal(await a.locator("#resume").textContent(), "Вернуться в комнату");
+  await a.locator("#back-to-battle").evaluate((button) => button.click());
   await visible(a, "lobby");
   const code = await a.locator("#room-code").textContent();
   await a.locator("#start").click();
@@ -326,6 +371,17 @@ try {
   await visible(b, "battle");
   await a.emulateMedia({ reducedMotion: "reduce" });
   await fits(a);
+  await a.locator("#fullscreen").click();
+  await a.waitForFunction(() => Boolean(document.fullscreenElement));
+  assert.equal(await a.locator("#fullscreen").getAttribute("aria-pressed"), "true");
+  await a.locator("#fullscreen").click();
+  await a.waitForFunction(() => !document.fullscreenElement);
+  await a.evaluate(() => {
+    Object.defineProperty(document, "fullscreenEnabled", { configurable: true, value: false });
+    Object.defineProperty(document, "webkitFullscreenEnabled", { configurable: true, value: false });
+  });
+  await a.locator("#fullscreen").click();
+  await a.waitForFunction(() => !document.getElementById("notice").hidden && document.getElementById("notice").textContent.includes("не поддерживает"));
   assert.deepEqual(errors, []);
   console.log(
     "Browser checks passed: stable hardware size, delayed start response, peer interpolation with RTT/jitter, controls, 4 mobile viewports, offline/rejoin, host exit and rematch.",

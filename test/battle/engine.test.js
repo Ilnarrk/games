@@ -133,3 +133,13 @@ test("bots navigate and fire without resetting player state; snapshots have no c
     assert.doesNotThrow(() => JSON.stringify(g.snapshot()));
   }
 });
+
+test("duel bot reaches a firing position and defeats an idle opponent", () => {
+  for (const level of [1, 12, 35, 99]) {
+    const g = new Game("duel", level, 4);
+    for (let n = 0; n < 3000 && g.state === "play"; n++)
+      g.step([{ d: -1, fire: false }, g.botInput(g.players[1])]);
+    assert.equal(g.state, "done", `Bot stalled on map ${level}`);
+    assert.equal(g.winner, 1);
+  }
+});

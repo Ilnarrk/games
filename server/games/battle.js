@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomBytes, createHash } from "node:crypto";
+import { randomBytes, randomInt, createHash } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { WebSocketServer, WebSocket } from "ws";
 import { Game } from "../../public/games/battle/engine.js";
@@ -188,7 +188,7 @@ export function createBattleService({
       throw fail(503, "Все комнаты заняты. Попробуйте позже.");
     let code;
     do {
-      code = randomBytes(5).toString("hex").slice(0, 8).toUpperCase();
+      code = String(randomInt(100000000)).padStart(8, "0");
     } while (rooms.has(code));
     const room = {
       code,
@@ -300,7 +300,7 @@ export function createBattleService({
           if (
             !exact(b, ["code"]) ||
             typeof b.code !== "string" ||
-            !/^[A-F0-9]{8}$/i.test(b.code)
+            !/^[0-9]{8}$/.test(b.code)
           )
             throw fail(400, "Код комнаты — 8 символов.");
           const room = rooms.get(b.code.toUpperCase());
@@ -377,8 +377,8 @@ export function createBattleService({
       (!room.slots[slot].bot || room.slots[slot].until > clock())
     )
       attach(room, id, slot);
-    else if (room) {
-      membership.delete(id);
+    else {
+      if (room) membership.delete(id);
       send(ws, { type: "left" });
     }
     ws.on("message", (raw) => {

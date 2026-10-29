@@ -7,6 +7,9 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <meta name="theme-color" content="#303c35" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Танчики 99" />
     <title>Танчики 99</title>
     <link rel="stylesheet" href="/game/games/battle/style.css" />
     <script type="module" src="/game/games/battle/client.js"></script>
@@ -71,10 +74,11 @@
             ><input
               id="code"
               maxlength="8"
-              pattern="[a-fA-F0-9]{8}"
+              pattern="[0-9]{8}"
+              inputmode="numeric"
               autocomplete="off"
               autocapitalize="characters"
-              placeholder="A1B2C3D4"
+              placeholder="12345678"
               required
             /><button class="primary" type="submit">Присоединиться</button>
           </form>
@@ -121,7 +125,7 @@
         <section id="battle" class="page" hidden>
           <div class="hud">
             <span id="level">Уровень 1</span><span id="score">Счёт 0</span
-            ><button id="battle-menu" aria-label="Открыть меню боя">Ⅱ</button>
+            >
           </div>
           <div id="arena">
             <canvas
@@ -154,7 +158,7 @@
         </section>
         <p id="notice" role="status" hidden></p>
       </div>
-      <div id="pad" inert aria-disabled="true" class="inactive">
+      <div id="pad" class="inactive">
         <div id="direction-controls">
           <div id="arrows" class="dpad">
             <button data-direction="0" aria-label="Вверх">▲</button
@@ -173,7 +177,11 @@
             <span aria-hidden="true">＋</span>
           </div>
         </div>
+        <div class="hardware-actions"><button id="fullscreen" aria-label="На весь экран" title="На весь экран" aria-pressed="false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></svg>
+        </button><button id="battle-menu" disabled aria-label="Пауза и меню боя" title="Пауза / меню">Ⅱ</button></div>
         <div class="fire-group">
+
           <button id="fire" aria-label="Огонь">ОГОНЬ</button>
         </div>
       </div>

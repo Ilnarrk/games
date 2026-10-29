@@ -154,6 +154,7 @@ export class Game {
     }
   }
   respawn(p) {
+    p.botWaypoint = null;
     const upper = this.mode === "duel" && p.slot === 1;
     const preferred = this.mode === "coop" && p.slot === 1 ? 256 : 128;
     const y = upper ? 0 : 384;
@@ -278,7 +279,52 @@ export class Game {
       }
     }
   }
+  duelBotInput(p) {
+    const targets = [...this.players.filter((t) => t.alive && t.team !== p.team),
+      ...this.bases.filter((b) => b.alive && b.team !== p.team)];
+    const aim = (x, y) => {
+      for (const t of targets) {
+        const dx = t.x - x, dy = t.y - y;
+        if (Math.min(Math.abs(dx), Math.abs(dy)) > 5 || Math.hypot(dx, dy) > 240) continue;
+        const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
+        let clear = true;
+        for (let n = 16; n < Math.hypot(dx, dy); n += 8) {
+          if (this.grid[Math.floor((y + 16 + DY[d] * n) / 16)]?.[Math.floor((x + 16 + DX[d] * n) / 16)] === 2) clear = false;
+        }
+        if (clear) return d;
+      }
+      return -1;
+    };
+    const shot = aim(p.x, p.y);
+    if (shot >= 0) {
+      p.d = shot;
+      p.botWaypoint = null;
+      return { d: -1, fire: true };
+    }
+    // Commit to a grid waypoint: rounding and replanning mid-tile causes oscillation.
+    let waypoint = p.botWaypoint;
+    if (!waypoint || Math.hypot(p.x - waypoint.x, p.y - waypoint.y) < 2) {
+      const sx = Math.round(p.x / 16), sy = Math.round(p.y / 16);
+      const queue = [[sx, sy, null]], seen = new Set([`${sx},${sy}`]);
+      waypoint = null;
+      for (let i = 0; i < queue.length; i++) {
+        const [cx, cy, first] = queue[i];
+        if (first && aim(cx * 16, cy * 16) >= 0) { waypoint = first; break; }
+        for (let d = 0; d < 4; d++) {
+          const nx = cx + DX[d], ny = cy + DY[d], key = `${nx},${ny}`;
+          if (nx < 0 || ny < 0 || nx > 24 || ny > 24 || seen.has(key)) continue;
+          if ([this.grid[ny][nx], this.grid[ny + 1][nx], this.grid[ny][nx + 1], this.grid[ny + 1][nx + 1]].some((v) => v === 2 || v === 3)) continue;
+          if (this.bases.some((b) => overlap({ x: nx * 16, y: ny * 16 }, b))) continue;
+          seen.add(key);
+          queue.push([nx, ny, first || { x: nx * 16, y: ny * 16, d }]);
+        }
+      }
+      p.botWaypoint = waypoint;
+    }
+    return { d: waypoint?.d ?? -1, fire: Boolean(waypoint) };
+  }
   botInput(p) {
+    if (this.mode === "duel") return this.duelBotInput(p);
     const opponent = this.players.find((t) => t.team !== p.team && t.alive);
     const targets =
       this.mode === "duel"
@@ -307,7 +353,8 @@ export class Game {
           chosen = first;
         }
         if (dist < 32) break;
-        for (let d = 0; d < 4; d++) {
+        for (let n = 0; n < 4; n++) {
+          const d = (n + (this.mode === "duel" ? Math.floor(this.tick / 180) + p.slot : 0)) % 4;
           const nx = x + DX[d],
             ny = y + DY[d],
             key = `${nx},${ny}`;

@@ -77,12 +77,17 @@ function input() {
   };
 }
 function show(id) {
+  // A battle screen needs an authoritative snapshot, not just a saved room.
+  if (["battle", "battle-options"].includes(id) && (!room?.started || !world))
+    id = room ? "lobby" : "menu";
   if (screen !== id) clearInput();
   screen = id;
   document.querySelectorAll(".page").forEach((p) => (p.hidden = p.id !== id));
-  $("pad").inert = id !== "battle";
+  $("direction-controls").inert = id !== "battle";
+  $("fire").disabled = id !== "battle";
+  $("battle-menu").disabled = id !== "battle";
   $("pad").classList.toggle("inactive", id !== "battle");
-  $("pad").setAttribute("aria-disabled", String(id !== "battle"));
+
   document.body.classList.toggle("playing", id === "battle");
   notice("");
   const heading = $(id).querySelector("h1,h2");
@@ -106,10 +111,18 @@ function updateProfile(p) {
   $("name").value = p.name;
 }
 function updateRoom(r) {
+  if (!r || room?.code !== r.code) {
+    world = null;
+    revision = -1;
+    pausedByMenu = false;
+    lastHud = "";
+    lastResult = "";
+  }
   room = r;
   if (r) simulation.setRoom(r.code, r.slot);
   else simulation.reset();
   $("resume").hidden = !r;
+  $("resume").textContent = r?.started ? "Вернуться в бой" : "Вернуться в комнату";
   if (!r) return;
   $("room-title").textContent = r.mode === "duel" ? "Дуэль" : "Вместе";
   $("room-code").textContent = r.code;
@@ -170,7 +183,7 @@ function connect() {
       world = null;
       simulation.reset();
       $("resume").hidden = true;
-      if (screen !== "settings") show("menu");
+      if (["battle", "battle-options", "result", "lobby"].includes(screen)) show("menu");
       return;
     }
     if (b.type === "error") {
@@ -297,6 +310,7 @@ function settings(from) {
   show("settings");
 }
 function menuDuringBattle() {
+  if (!room?.started || !world || world.state !== "play") return;
   clearInput();
   pausedByMenu = world?.mode === "solo" && !world.paused;
   if (pausedByMenu) send({ type: "pause" });
@@ -307,6 +321,11 @@ function menuDuringBattle() {
   show("battle-options");
 }
 function backToBattle() {
+  if (!room?.started || !world) {
+    pausedByMenu = false;
+    show(room ? "lobby" : "menu");
+    return;
+  }
   if (pausedByMenu) {
     send({ type: "pause" });
     pausedByMenu = false;
@@ -474,6 +493,19 @@ document.querySelectorAll("[data-direction]").forEach((b) =>
     (e) => touches.delete(e.pointerId),
   ),
 );
+document.querySelectorAll("[data-direction]").forEach((button) => {
+  button.addEventListener("pointermove", (e) => {
+    if (!button.hasPointerCapture(e.pointerId)) return;
+    const next = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-direction]");
+    if (next) touches.set(e.pointerId, Number(next.dataset.direction));
+    else touches.delete(e.pointerId);
+    document.querySelectorAll("[data-direction]").forEach((b) =>
+      b.classList.toggle("pressed", [...touches.values()].includes(Number(b.dataset.direction))));
+  });
+  const release = () => document.querySelectorAll("[data-direction]").forEach((b) =>
+    b.classList.toggle("pressed", [...touches.values()].includes(Number(b.dataset.direction))));
+  for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) button.addEventListener(type, release);
+});
 pointerButton(
   $("fire"),
   (e) => firePointers.add(e.pointerId),
@@ -486,10 +518,12 @@ function updateStick(e) {
     dx = e.clientX - rect.left - rect.width / 2,
     dy = e.clientY - rect.top - rect.height / 2,
     r = Math.hypot(dx, dy),
-    scale = r > 42 ? 42 / r : 1;
-  $("stick").style.transform = `translate(${dx * scale}px,${dy * scale}px)`;
+    zoom = rect.width / $("joystick").offsetWidth,
+    radius = 42 * zoom,
+    scale = r > radius ? radius / r : 1;
+  $("stick").style.transform = `translate(${dx * scale / zoom}px,${dy * scale / zoom}px)`;
   joystickDirection =
-    r < 16
+    r < 9 * zoom
       ? -1
       : Math.abs(dx) > Math.abs(dy)
         ? dx > 0
@@ -531,7 +565,7 @@ document.addEventListener("visibilitychange", () => {
     show("battle-options");
   }
 });
-setInterval(() => {
+function flushInputs() {
   if (!connected || !world || !room || world.state !== "play") return;
   if (ws.bufferedAmount > 8192) {
     reconnect();
@@ -545,7 +579,7 @@ setInterval(() => {
       revision: simulation.revision,
       commands,
     });
-}, 1000 / 30);
+}
 setInterval(() => {
   if (connected) send({ type: "ping", time: Date.now() });
   if (
@@ -559,6 +593,7 @@ setInterval(() => {
 function frame(now) {
   requestAnimationFrame(frame);
   simulation.advance(now, input(), connected && !document.hidden);
+  flushInputs();
   if (screen !== "battle" || !world || !room) return;
   draw(simulation.render(now));
   if (!connected || now - lastSnapshot > 1000) {
@@ -578,10 +613,76 @@ try {
   if (invited) {
     $("code").value = invited.toUpperCase();
     show("join");
-  } else if (b.room) show(b.room.started ? "battle" : "lobby");
+  } else show(b.room ? (b.room.started ? "battle" : "lobby") : "menu");
 } catch {
   connection("Нет связи");
   notice(
     "Не удалось загрузить профиль. Проверьте соединение и обновите страницу.",
   );
 }
+
+// Fit the hardware first, then fit each menu inside its screen without scrolling.
+function fitConsole() {
+  const shell = document.querySelector(".console");
+  const viewport = window.visualViewport;
+  const width = viewport?.width || innerWidth;
+  const height = viewport?.height || innerHeight;
+  const landscape = width > height && height <= 600;
+  const minWidth = landscape ? 600 : 340;
+  const minHeight = landscape ? 320 : 780;
+  const scale = Math.min(1, (width - 24) / minWidth, (height - 24) / minHeight);
+  shell.style.zoom = scale;
+  shell.style.width = Math.min(landscape ? 900 : 500, (width - 24) / scale) + "px";
+  shell.style.height = Math.min(landscape ? 600 : 900, (height - 24) / scale) + "px";
+  const page = document.querySelector(".page:not([hidden])");
+  if (page && page.id !== "battle") {
+    page.style.zoom = 1;
+    const available = page.clientHeight;
+    const needed = page.scrollHeight;
+    page.style.zoom = Math.min(1, available / Math.max(1, needed));
+  }
+}
+window.addEventListener("resize", fitConsole);
+window.visualViewport?.addEventListener("resize", fitConsole);
+new MutationObserver(() => requestAnimationFrame(fitConsole)).observe(document.querySelector(".screen-bezel"), {
+  childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"],
+});
+document.fonts.ready.then(fitConsole);
+fitConsole();
+
+const fullscreenButton = $("fullscreen");
+const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+function fullscreenUnavailable() {
+  if (navigator.standalone || matchMedia("(display-mode: standalone)").matches) {
+    notice("Игра уже открыта отдельным приложением без панелей браузера.");
+    return;
+  }
+  notice("Этот браузер не поддерживает полный экран для игры. На iPhone: откройте меню «Поделиться» → «На экран Домой» и запускайте игру с этой иконки.");
+}
+fullscreenButton.onclick = async () => {
+  try {
+    if (fullscreenElement()) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      await exit.call(document);
+    } else {
+      const root = document.documentElement;
+      const request = root.requestFullscreen || root.webkitRequestFullscreen;
+      if (!request || !(document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
+        fullscreenUnavailable();
+        return;
+      }
+      await request.call(root);
+    }
+  } catch {
+    notice("Браузер не разрешил полноэкранный режим.");
+  }
+};
+function updateFullscreen() {
+  const active = Boolean(fullscreenElement());
+  fullscreenButton.setAttribute("aria-pressed", String(active));
+  fullscreenButton.setAttribute("aria-label", active ? "Выйти из полного экрана" : "На весь экран");
+  fullscreenButton.title = fullscreenButton.getAttribute("aria-label");
+  requestAnimationFrame(fitConsole);
+}
+document.addEventListener("fullscreenchange", updateFullscreen);
+document.addEventListener("webkitfullscreenchange", updateFullscreen);

@@ -34,6 +34,19 @@ export function renderer(canvas) {
     x.fillRect(-5, -5, 10, 10);
     x.fillStyle = light;
     x.fillRect(-5, -5, 4, 3);
+    if (t.lv >= 1) {
+      x.fillStyle = dark;
+      x.fillRect(-10, -10, 3, 20);
+      x.fillRect(7, -10, 3, 20);
+      x.fillStyle = light;
+      x.fillRect(-3, 1, 6, 3);
+    }
+    if (t.lv >= 3) {
+      x.fillStyle = light;
+      x.fillRect(-12, 3, 3, 8);
+      x.fillRect(9, 3, 3, 8);
+      x.fillRect(-4, -20, 8, 4);
+    }
     if (t.lv >= 2) {
       x.fillStyle = light;
       x.fillRect(-7, -15, 3, 7);
@@ -59,9 +72,30 @@ export function renderer(canvas) {
     x.strokeStyle = "#eef2d0";
     x.strokeRect(b.x + 3, b.y + 3, 26, 26);
     x.fillStyle = "#fff";
-    x.font = "bold 20px monospace";
-    x.textAlign = "center";
-    x.fillText(["★", "S", "+", "B", "T", "F"][b.k], b.x + 16, b.y + 23);
+    x.save();
+    x.translate(b.x + 16, b.y + 16);
+    x.strokeStyle = "#fff";
+    x.lineWidth = 2.5;
+    x.lineJoin = "round";
+    x.beginPath();
+    if (b.k === 0) {
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 5 : 11;
+        x.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      x.closePath(); x.fill();
+    } else if (b.k === 1) {
+      x.moveTo(-9, -9); x.lineTo(9, -9); x.lineTo(8, 3); x.lineTo(0, 10); x.lineTo(-8, 3); x.closePath(); x.stroke();
+    } else if (b.k === 2) {
+      x.fillRect(-3, -10, 6, 20); x.fillRect(-10, -3, 20, 6);
+    } else if (b.k === 3) {
+      x.arc(0, 2, 8, 0, Math.PI * 2); x.stroke(); x.moveTo(3, -6); x.lineTo(7, -10); x.lineTo(10, -10); x.stroke();
+    } else if (b.k === 4) {
+      x.arc(0, 0, 9, 0, Math.PI * 2); x.moveTo(0, -6); x.lineTo(0, 0); x.lineTo(5, 3); x.stroke();
+    } else {
+      x.strokeRect(-9, -8, 18, 17); x.moveTo(-9, -2); x.lineTo(9, -2); x.moveTo(0, -8); x.lineTo(0, -2); x.moveTo(-4, -2); x.lineTo(-4, 9); x.moveTo(4, -2); x.lineTo(4, 9); x.stroke();
+    }
+    x.restore();
   }
   return function draw(w) {
     x.fillStyle = "#101810";
@@ -98,7 +132,15 @@ export function renderer(canvas) {
           x.fillRect(px + 8 - offset, py + 11, 6, 2);
         }
       }
+    // A thin rim marks the physical edge without occupying playable tiles.
+    x.strokeStyle = "#77856b";
+    x.lineWidth = 2;
+    x.strokeRect(1, 1, 414, 414);
     for (const base of w.bases) {
+      x.fillStyle = "#4b5948";
+      x.fillRect(base.x, base.y, 32, 32);
+      x.fillStyle = "#78816b";
+      x.fillRect(base.x + 2, base.y + 2, 28, 28);
       x.fillStyle = base.alive
         ? base.team
           ? "#58b8d0"
