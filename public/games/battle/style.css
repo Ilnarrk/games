@@ -1,0 +1,361 @@
+@import url("/game/assets/console.css");
+
+.menu-actions {
+  display: grid;
+  gap: 10px;
+}
+.profile-strip {
+  border-top: 1px solid #40533b;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.mode-options {
+  display: grid;
+  gap: 16px;
+}
+.mode {
+  text-align: left;
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+.mode strong {
+  font-family: Retro, monospace;
+  font-size: 23px;
+  font-weight: normal;
+}
+.mode span {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.room-code {
+  font-family: Retro, monospace;
+  font-size: 32px;
+  letter-spacing: 0.08em;
+  padding: 16px 0;
+  text-align: center;
+  background: #1d2c1b;
+  border: 2px dashed #60754e;
+}
+.invite-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.invite-actions button {
+  font-size: 12px;
+  padding: 8px;
+}
+.slots {
+  display: grid;
+  gap: 8px;
+}
+.slot {
+  border-bottom: 1px solid #40533b;
+  padding: 12px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+.slot span:first-child {
+  overflow-wrap: anywhere;
+}
+.slot small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.result-score {
+  font-family: Retro, monospace;
+  font-size: 40px;
+}
+.title-art {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 36px;
+}
+.hud,
+.battle-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: bold;
+}
+.hud button {
+  min-width: 48px;
+  padding: 4px;
+  min-height: 48px;
+  background: transparent;
+  box-shadow: none;
+}
+.battle-bottom {
+  min-height: 26px;
+  flex-wrap: wrap;
+}
+.battle-bottom #lives {
+  white-space: pre-wrap;
+}
+#battle {
+  padding: 4px;
+  min-height: 0;
+  gap: 4px;
+}
+#arena {
+  position: relative;
+  align-self: center;
+  line-height: 0;
+  width: 100%;
+  aspect-ratio: 1;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  background: #101810;
+}
+#arena-note {
+  position: absolute;
+  inset: 0;
+  background: #101810bb;
+  display: grid;
+  place-items: center;
+  line-height: 1.5;
+  text-align: center;
+  padding: 16px;
+}
+#notice {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  max-height: 40%;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 12px;
+  background: #2f3823;
+  border-top: 1px solid #71835a;
+  overflow-wrap: anywhere;
+}
+#pad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 10px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#direction-controls {
+  width: 156px;
+  height: 156px;
+  display: grid;
+  place-items: center;
+}
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 48px);
+  grid-template-rows: repeat(3, 48px);
+  gap: 2px;
+}
+.dpad button {
+  background: #303c35;
+  border-color: #526053;
+  border-radius: 5px;
+  padding: 0;
+  font-size: 22px;
+  touch-action: none;
+  box-shadow: 0 3px 0 #75816e;
+}
+.dpad button:nth-child(1) {
+  grid-column: 2;
+}
+.dpad button:nth-child(2) {
+  grid-row: 2;
+  grid-column: 1;
+}
+.dpad span {
+  grid-row: 2;
+  grid-column: 2;
+  background: #303c35;
+}
+.dpad button:nth-child(4) {
+  grid-row: 2;
+  grid-column: 3;
+}
+.dpad button:nth-child(5) {
+  grid-row: 3;
+  grid-column: 2;
+}
+.dpad button.pressed,
+#fire.pressed {
+  filter: brightness(1.4);
+  box-shadow: none;
+}
+#joystick {
+  width: 144px;
+  height: 144px;
+  border-radius: 50%;
+  border: 3px solid #9ba68f;
+  background: #adb7a0;
+  position: relative;
+  touch-action: none;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 4px 6px #303c3540;
+}
+#joystick > span {
+  color: #64725f;
+  font-size: 100px;
+  line-height: 1;
+  pointer-events: none;
+}
+#stick {
+  position: absolute;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: #303c35;
+  border: 4px solid #526053;
+  box-shadow: 0 4px 0 #788573;
+  pointer-events: none;
+  z-index: 1;
+}
+.fire-group {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  color: #455343;
+  font-size: 10px;
+}
+#fire {
+  width: 94px;
+  height: 94px;
+  min-height: 0;
+  border-radius: 50%;
+  background: var(--fire);
+  border: 4px solid #d4686d;
+  box-shadow: 0 6px 0 #863039;
+  color: white;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  font-size: 14px;
+  touch-action: none;
+}
+/* Hardware dimensions depend only on the viewport, never on the active page. */
+body.battle-game .console {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 22px minmax(0, 1fr) 156px 14px;
+}
+body.battle-game .brand {
+  grid-row: 1;
+}
+body.battle-game .screen-bezel {
+  grid-row: 2;
+}
+body.battle-game #pad {
+  grid-row: 3;
+}
+body.battle-game .hardware-footer {
+  grid-row: 4;
+}
+#pad.inactive {
+  opacity: 0.55;
+}
+#battle {
+  display: grid;
+  grid-template-rows: 48px minmax(0, 1fr) 28px;
+  overflow: hidden;
+}
+#arena {
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+canvas {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
+}
+@media (max-width: 520px) {
+  body.battle-game .console {
+    grid-template-rows: 22px minmax(0, 1fr) 148px 14px;
+  }
+  .invite-actions {
+    grid-template-columns: 1fr;
+  }
+  .room-code {
+    font-size: 28px;
+  }
+  #pad {
+    padding: 0 4px;
+  }
+  #direction-controls {
+    width: 148px;
+    height: 148px;
+  }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+  body.battle-game {
+    padding: 4px max(8px, env(safe-area-inset-right)) 4px
+      max(8px, env(safe-area-inset-left));
+  }
+  body.battle-game .console {
+    width: min(100%, 900px);
+    height: calc(100dvh - 12px);
+    max-height: none;
+    display: grid;
+    grid-template-columns: 148px minmax(0, 1fr) 112px;
+    grid-template-rows: 22px minmax(0, 1fr) 14px;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  body.battle-game .brand {
+    grid-column: 1/-1;
+  }
+  body.battle-game .hardware-footer {
+    grid-column: 1/-1;
+    grid-row: 3;
+  }
+  body.battle-game .screen-bezel {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    height: 100%;
+    border-width: 6px;
+  }
+  body.battle-game .screen-top {
+    padding: 2px 4px 0;
+    font-size: 9px;
+  }
+  body.battle-game #pad {
+    display: contents;
+  }
+  body.battle-game #direction-controls {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: center;
+  }
+  body.battle-game .fire-group {
+    grid-column: 3;
+    grid-row: 2;
+    align-self: center;
+  }
+  .hud,
+  .battle-bottom {
+    font-size: 11px;
+  }
+}

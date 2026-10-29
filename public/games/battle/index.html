@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#303c35" />
+    <title>Танчики 99</title>
+    <link rel="stylesheet" href="/game/games/battle/style.css" />
+    <script type="module" src="/game/games/battle/client.js"></script>
+  </head>
+  <body class="battle-game">
+    <main class="console">
+      <header class="brand">
+        <a href="/game" aria-label="Каталог игр">pocket game</a
+        ><span class="model">Т–99</span>
+      </header>
+      <div class="screen-bezel">
+        <div class="screen-top">
+          <span><i id="led"></i> ТАНЧИКИ 99</span
+          ><span id="connection" role="status">Подключение…</span>
+        </div>
+        <section id="menu" class="page">
+          <div class="title-art" aria-hidden="true">
+            <span class="pixel-tank"></span
+            ><span class="pixel-tank blue"></span>
+          </div>
+          <p class="eyebrow">99 уровней · одна база</p>
+          <h1>Танчики<span>99</span></h1>
+          <p class="intro">Защищай своё. Играй вместе.</p>
+          <div class="menu-actions">
+            <button id="solo" class="primary">Одиночная игра</button
+            ><button data-screen="create">Создать комнату</button
+            ><button data-screen="join">Войти по коду</button
+            ><button data-screen="settings">Настройки</button>
+          </div>
+          <div class="profile-strip">
+            <span id="player-label">Игрок</span
+            ><span id="record">Рекорд 0</span>
+          </div>
+          <button id="resume" hidden>Вернуться в комнату</button>
+        </section>
+        <section id="create" class="page" hidden>
+          <button class="back" data-screen="menu">‹ Назад</button>
+          <h2>Новая комната</h2>
+          <p>Для тебя и напарника. Или соперника.</p>
+          <div class="mode-options">
+            <button id="coop" class="mode">
+              <strong>Вместе</strong
+              ><span
+                >Общая база, 99 уровней.<br />По 3 жизни каждому.</span
+              ></button
+            ><button id="duel" class="mode">
+              <strong>Дуэль</strong
+              ><span
+                >Две базы, по 3 жизни.<br />Защити свою, уничтожь чужую.</span
+              >
+            </button>
+          </div>
+          <p class="hint">
+            Можно начать с ботом и пригласить друга прямо в бой.
+          </p>
+        </section>
+        <section id="join" class="page" hidden>
+          <button class="back" data-screen="menu">‹ Назад</button>
+          <h2>Войти в комнату</h2>
+          <form id="join-form">
+            <label for="code">Код приглашения</label
+            ><input
+              id="code"
+              maxlength="8"
+              pattern="[a-fA-F0-9]{8}"
+              autocomplete="off"
+              autocapitalize="characters"
+              placeholder="A1B2C3D4"
+              required
+            /><button class="primary" type="submit">Присоединиться</button>
+          </form>
+          <p class="hint">
+            Попроси друга поделиться кодом или ссылкой на комнату.
+          </p>
+        </section>
+        <section id="settings" class="page" hidden>
+          <button id="settings-back" class="back">‹ Назад</button>
+          <h2>Настройки</h2>
+          <form id="settings-form">
+            <label for="name">Имя игрока</label
+            ><input id="name" maxlength="32" required autocomplete="nickname" />
+            <fieldset>
+              <legend>Сенсорное управление</legend>
+              <label class="radio"
+                ><input type="radio" name="controls" value="arrows" checked />
+                Стрелки</label
+              ><label class="radio"
+                ><input type="radio" name="controls" value="joystick" />
+                Джойстик</label
+              >
+            </fieldset>
+            <button type="submit" class="primary">Сохранить</button>
+          </form>
+          <p class="hint">
+            Клавиатура: стрелки или WASD, пробел — огонь.<br />Имя и прогресс
+            сохраняются для этого браузера.
+          </p>
+        </section>
+        <section id="lobby" class="page" hidden>
+          <h2 id="room-title">Комната</h2>
+          <p class="hint">Пригласи друга</p>
+          <div class="room-code" id="room-code"></div>
+          <div class="invite-actions">
+            <button id="copy-code">Копировать код</button
+            ><button id="share">Поделиться</button>
+          </div>
+          <div id="slots" class="slots"></div>
+          <button id="ready">Готов к бою</button
+          ><button id="start" class="primary">Начать с ботом</button
+          ><button class="leave">Выйти в меню</button>
+        </section>
+        <section id="battle" class="page" hidden>
+          <div class="hud">
+            <span id="level">Уровень 1</span><span id="score">Счёт 0</span
+            ><button id="battle-menu" aria-label="Открыть меню боя">Ⅱ</button>
+          </div>
+          <div id="arena">
+            <canvas
+              id="c"
+              width="416"
+              height="416"
+              aria-label="Игровое поле"
+            ></canvas>
+            <div id="arena-note" role="status" hidden></div>
+          </div>
+          <div class="battle-bottom">
+            <span id="lives"></span><span id="enemy-count"></span>
+          </div>
+        </section>
+        <section id="battle-options" class="page" hidden>
+          <h2>Меню боя</h2>
+          <p id="pause-note"></p>
+          <button id="back-to-battle" class="primary">Вернуться в бой</button
+          ><button id="ingame-settings">Настройки</button
+          ><button id="ingame-invite">Пригласить друга</button
+          ><button class="leave">Выйти в меню</button>
+        </section>
+        <section id="result" class="page" hidden>
+          <p class="eyebrow">Итоги боя</p>
+          <h2 id="result-title"></h2>
+          <div id="result-score" class="result-score"></div>
+          <p id="result-detail"></p>
+          <button id="next" class="primary">Продолжить</button
+          ><button class="leave">Выйти в меню</button>
+        </section>
+        <p id="notice" role="status" hidden></p>
+      </div>
+      <div id="pad" inert aria-disabled="true" class="inactive">
+        <div id="direction-controls">
+          <div id="arrows" class="dpad">
+            <button data-direction="0" aria-label="Вверх">▲</button
+            ><button data-direction="3" aria-label="Влево">◀</button
+            ><span></span
+            ><button data-direction="1" aria-label="Вправо">▶</button
+            ><button data-direction="2" aria-label="Вниз">▼</button>
+          </div>
+          <div
+            id="joystick"
+            hidden
+            role="group"
+            aria-label="Виртуальный джойстик"
+          >
+            <div id="stick"></div>
+            <span aria-hidden="true">＋</span>
+          </div>
+        </div>
+        <div class="fire-group">
+          <button id="fire" aria-label="Огонь">ОГОНЬ</button>
+        </div>
+      </div>
+      <footer class="hardware-footer">
+        <span>● ● ● ● ●</span>
+      </footer>
+    </main>
+  </body>
+</html>

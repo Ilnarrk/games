@@ -1,0 +1,11 @@
+node_modules/
+data/
+test-results/
+playwright-report/
+output/
+.playwright-cli/
+.env
+.codex/
+.aws/
+.agents/
+
